@@ -22,17 +22,19 @@
       <blockquote>{{ message.content }}</blockquote>
     {% endfor %}
 
-    <form action="/write?group_name={{ group_name }}" method="post">
+    <!--<form action="/write?group_name={{ group_name }}" method="post">-->
+
+    <form action="/write" method="post">
       <div><textarea name="content" rows="3" cols="60"></textarea></div>
       <div><input type="submit" value="Post"></div>
     </form>
 
     <hr>
-
+<!--
     <form>Group name:
       <input value="{{ group_name }}" name="group_name">
       <input type="submit" value="switch">
-    </form>
+    </form>-->
 
     <a href="{{ url|safe }}">{{ url_linktext }}</a>
 

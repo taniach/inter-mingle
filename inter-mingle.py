@@ -32,10 +32,12 @@ class Message(ndb.Model):
 class MainPage(webapp2.RequestHandler):
 
     def get(self):
-        group_name = self.request.get('group_name',
-                                          DEFAULT_GROUP_NAME)
-        mquery = Message.query(
-            ancestor=group_key(group_name)).order(-Message.date)
+        #group_name = self.request.get('group_name',
+        #                                  DEFAULT_GROUP_NAME)
+        #mquery = Message.query(
+        #    ancestor=group_key(group_name)).order(-Message.date)
+        
+        mquery = Message.query().order(-Message.date)
         messages = mquery.fetch(5)
 
         if users.get_current_user():
@@ -47,7 +49,7 @@ class MainPage(webapp2.RequestHandler):
 
         template_values = {
             'messages': messages,
-            'group_name': urllib.quote_plus(group_name),
+            #'group_name': urllib.quote_plus(group_name),
             'url': url,
             'url_linktext': url_linktext,
         }
@@ -61,9 +63,11 @@ class Group(webapp2.RequestHandler):
         # is in the same entity group. Queries across the single entity group
         # will be consistent. However, the write rate to a single entity group
         # should be limited to ~1/second.
-        group_name = self.request.get('group_name',
-                                          DEFAULT_GROUP_NAME)
-        message = Message(parent=group_key(group_name))
+        #group_name = self.request.get('group_name',
+        #                                  DEFAULT_GROUP_NAME)
+        #message = Message(parent=group_key(group_name))
+
+        message = Message()
 
         if users.get_current_user():
             greeting.author = users.get_current_user()
@@ -71,8 +75,10 @@ class Group(webapp2.RequestHandler):
         message.content = self.request.get('content')
         message.put()
 
-        query_params = {'group_name': group_name}
-        self.redirect('/?' + urllib.urlencode(query_params))
+        #query_params = {'group_name': group_name}
+        #self.redirect('/?' + urllib.urlencode(query_params))
+        self.redirect('/')
+        self.redirect('/')
 
 application = webapp2.WSGIApplication([
     ('/', MainPage),
