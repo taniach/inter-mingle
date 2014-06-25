@@ -1,26 +1,17 @@
-import cgi
+import os
 import urllib
-import datetime
 
 from google.appengine.api import users
 from google.appengine.ext import ndb
 
+import jinja2
 import webapp2
 
-MAIN_PAGE_FOOTER_TEMPLATE = """\
-    <form action="/write?%s" method="post">
-      <div><textarea name="content" rows="2" cols="60"></textarea></div>
-      <div><input type="submit" value="Post"></div>
-    </form>
-    <hr>
-    <form>Group name:
-      <input value="%s" name="group_name">
-      <input type="submit" value="Switch">
-    </form>
-    <a href="%s">%s</a>
-  </body>
-</html>
-"""
+
+JINJA_ENVIRONMENT = jinja2.Environment(
+    loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
+    extensions=['jinja2.ext.autoescape'],
+    autoescape=True)
 
 DEFAULT_GROUP_NAME = 'default_group'
 
@@ -39,26 +30,13 @@ class Message(ndb.Model):
     date = ndb.DateTimeProperty(auto_now_add=True)
 
 class MainPage(webapp2.RequestHandler):
+
     def get(self):
-        self.response.write('<html><body>')
         group_name = self.request.get('group_name',
                                           DEFAULT_GROUP_NAME)
-
-        # Ancestor Queries, as shown here, are strongly consistent with the High
-        # Replication Datastore. Queries that span entity groups are eventually
-        # consistent. If we omitted the ancestor from this query there would be
-        # a slight chance that Greeting that had just been written would not
-        # show up in a query.
-        message_query = Message.query(
+        mquery = Message.query(
             ancestor=group_key(group_name)).order(-Message.date)
-        messages = message_query.fetch(3)
-
-        for msg in messages:
-
-            self.response.write('%s' % msg.date.strftime('%d %b %y - %I.%M.%S %p'))
-            self.response.write('<blockquote>%s</blockquote>' %
-                                cgi.escape(msg.content))
-            
+        messages = mquery.fetch(5)
 
         if users.get_current_user():
             url = users.create_logout_url(self.request.uri)
@@ -67,11 +45,15 @@ class MainPage(webapp2.RequestHandler):
             url = users.create_login_url(self.request.uri)
             url_linktext = 'Login'
 
-        # Write the submission form and the footer of the page
-        sign_query_params = urllib.urlencode({'group_name': group_name})
-        self.response.write(MAIN_PAGE_FOOTER_TEMPLATE %
-                            (sign_query_params, cgi.escape(group_name),
-                             url, url_linktext))
+        template_values = {
+            'messages': messages,
+            'group_name': urllib.quote_plus(group_name),
+            'url': url,
+            'url_linktext': url_linktext,
+        }
+
+        template = JINJA_ENVIRONMENT.get_template('minglepage.html')
+        self.response.write(template.render(template_values))
 
 class Group(webapp2.RequestHandler):
     def post(self):
